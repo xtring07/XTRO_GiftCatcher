@@ -1,0 +1,499 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>XTRO Gift Catcher</title>
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;min-height:100vh;
+ display:flex;align-items:center;justify-content:center;
+ font-family:Arial,sans-serif;color:#20334b;
+ background:linear-gradient(#8bdcff,#e2f9ff 65%,#a9e77b);
+}
+#game{
+ width:min(96vw,520px);max-height:calc(100vh - 8px);
+ overflow-y:auto;padding:10px;
+ background:#f5fcff;border:3px solid #fff;
+ border-radius:22px;box-shadow:0 12px 35px #397da944;
+}
+.screen{text-align:center}
+.logo{
+ width:max-content;max-width:100%;margin:6px auto;
+ padding:8px 16px;border:3px solid #258ce5;
+ border-radius:15px;background:#fff;color:#1685df;
+ font-size:25px;font-weight:900;letter-spacing:2px;
+ box-shadow:0 4px 0 #b6e1ff;
+}
+.logo span{display:block;font-size:12px;letter-spacing:5px;color:#304c69}
+h2{margin:8px}
+p{color:#486783;margin:8px 0}
+button{
+ border:0;border-radius:13px;padding:12px 18px;
+ font-weight:bold;font-size:16px;color:#fff;
+ background:#398ce8;box-shadow:0 3px 0 #2467b4;
+ cursor:pointer;-webkit-tap-highlight-color:transparent;
+}
+button:active{transform:translateY(2px);box-shadow:none}
+#startGame{
+ width:85%;margin:17px auto 12px;padding:15px;
+ background:#ff9d36;box-shadow:0 3px 0 #d97716;
+ font-size:20px;
+}
+#modeScreen,#playScreen,#gameover{display:none}
+.modes{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:15px 0}
+.modes button{box-shadow:0 3px 0 #0002}
+#easy{background:#52bf68}
+#medium{background:#39a8ee}
+#hard{background:#ff9c38}
+#hacker{background:#a56be8}
+.modes button.sel{outline:3px solid #ffdf52;outline-offset:1px}
+#ok{
+ width:80%;margin:8px;background:#ff9d36;
+ box-shadow:0 3px 0 #d97716
+}
+#desc{min-height:18px;font-size:14px}
+#hud{
+ display:flex;justify-content:space-around;gap:4px;
+ padding:5px 0;font-size:12px;font-weight:bold;
+ color:#234c70;flex-wrap:wrap;
+}
+#hud span{
+ background:#fff;border:1px solid #c7e8f9;
+ border-radius:8px;padding:6px 5px;
+}
+canvas{
+ display:block;width:min(100%,calc((100vh - 180px)*.75));
+ height:auto;aspect-ratio:3/4;margin:0 auto;
+ border:2px solid #b7e7ff;border-radius:14px;
+ background:#85d9ff;touch-action:none;
+}
+.controls{display:flex;gap:10px;margin-top:8px}
+.controls button{
+ height:52px;flex:1;padding:0;position:relative;
+ background:#43bb70;box-shadow:0 3px 0 #27894b;
+ touch-action:none;user-select:none;-webkit-user-select:none;
+}
+#L,#R{background:#43bb70;box-shadow:0 3px 0 #27894b}
+#L::after,#R::after{
+ content:"";position:absolute;top:50%;left:50%;
+ width:16px;height:16px;border-top:4px solid white;
+ border-left:4px solid white;
+}
+#L::after{transform:translate(-35%,-50%) rotate(-45deg)}
+#R::after{transform:translate(-65%,-50%) rotate(135deg)}
+.big{font-size:30px;color:#ef8c27;margin:20px 0 8px}
+.small{font-size:12px;color:#66839b}
+#gameover button{margin:5px}
+#gameover button:last-child{background:#43a5e9}
+
+@media(max-width:380px){
+ #game{padding:7px}
+ .logo{font-size:22px;padding:7px 12px}
+ #hud{font-size:10px}
+ #hud span{padding:5px 4px}
+ .controls button{height:46px}
+}
+@media(max-height:650px){
+ #game{padding:6px}
+ .logo{margin:3px auto;padding:5px 12px;font-size:21px}
+ .logo span{font-size:10px}
+ #hud{padding:3px 0}
+ #hud span{padding:4px}
+ .controls{margin-top:5px}
+ .controls button{height:40px}
+ #startGame{margin:10px auto;padding:12px}
+ .modes{margin:10px 0;gap:7px}
+ .modes button{padding:10px}
+}
+</style>
+</head>
+<body>
+<div id="game">
+
+<div id="menu" class="screen">
+ <div class="logo">XTRO<span>GIFT CATCHER</span></div>
+ <p>Catch gifts. Build combos. Collect rewards!</p>
+ <button id="startGame">PLAY NOW!</button>
+ <p class="small">BEST SCORE: <b id="menuBest">0</b></p>
+</div>
+
+<div id="modeScreen" class="screen">
+ <div class="logo">XTRO<span>GIFT CATCHER</span></div>
+ <h2>Choose Your Level</h2>
+ <div class="modes">
+  <button id="easy" class="sel" onclick="mode('easy')">EASY</button>
+  <button id="medium" onclick="mode('medium')">MEDIUM</button>
+  <button id="hard" onclick="mode('hard')">HARD</button>
+  <button id="hacker" onclick="mode('hacker')">HACKER</button>
+ </div>
+ <p id="desc">Lots of gifts. Slow speed.</p>
+ <button id="ok">LET'S GO!</button>
+</div>
+
+<div id="playScreen">
+ <div id="hud">
+  <span>SCORE <b id="score">0</b></span>
+  <span>COMBO ×<b id="combo">1</b></span>
+  <span>LIVES <b id="lives">3</b></span>
+  <span>BEST <b id="best">0</b></span>
+ </div>
+ <canvas id="c" width="540" height="720"></canvas>
+ <div class="controls">
+  <button id="L" aria-label="Move left"></button>
+  <button id="R" aria-label="Move right"></button>
+ </div>
+</div>
+
+<div id="gameover" class="screen">
+ <div class="big">GAME OVER!</div>
+ <p>Your score</p>
+ <h2 id="final">0</h2>
+ <p>BEST SCORE: <b id="finalBest">0</b></p>
+ <button onclick="start()">PLAY AGAIN</button>
+ <button onclick="home()">MAIN MENU</button>
+</div>
+
+</div>
+
+<script>
+const canvas=document.getElementById("c");
+const ctx=canvas.getContext("2d");
+const W=540,H=720;
+
+let player,objects,particles,score,lives,combo,best;
+let running=false,left=false,right=false,last,spawn=0;
+let difficulty="easy",clouds=[],grassFlowers=[];
+
+const settings={
+ easy:{interval:23,speed:2.5,bomb:.035,blue:.13,green:.06,glitch:0},
+ medium:{interval:38,speed:4.3,bomb:.09,blue:.12,green:.06,glitch:0},
+ hard:{interval:58,speed:6.2,bomb:.15,blue:.10,green:.05,glitch:0},
+ hacker:{interval:75,speed:8.5,bomb:.18,blue:.08,green:.04,glitch:.40}
+};
+
+best=+(localStorage.xtroGiftBest||0);
+
+function updateBest(){
+ document.getElementById("menuBest").textContent=best;
+ document.getElementById("best").textContent=best;
+}
+updateBest();
+
+function mode(m){
+ difficulty=m;
+ document.querySelectorAll(".modes button")
+ .forEach(b=>b.classList.remove("sel"));
+ document.getElementById(m).classList.add("sel");
+
+ const descriptions={
+  easy:"Lots of gifts. Slow speed.",
+  medium:"Fewer gifts. Faster speed.",
+  hard:"Rare gifts. Very fast.",
+  hacker:"Extreme speed. Scoring glitches possible!"
+ };
+ document.getElementById("desc").textContent=descriptions[m];
+}
+
+function home(){
+ running=false;left=right=false;
+ document.getElementById("menu").style.display="block";
+ document.getElementById("modeScreen").style.display="none";
+ document.getElementById("playScreen").style.display="none";
+ document.getElementById("gameover").style.display="none";
+ updateBest();
+}
+
+document.getElementById("startGame").onclick=()=>{
+ document.getElementById("menu").style.display="none";
+ document.getElementById("modeScreen").style.display="block";
+};
+document.getElementById("ok").onclick=start;
+
+function start(){
+ document.getElementById("menu").style.display="none";
+ document.getElementById("modeScreen").style.display="none";
+ document.getElementById("gameover").style.display="none";
+ document.getElementById("playScreen").style.display="block";
+
+ player={x:(W-100)/2,y:630,w:100,h:36};
+ objects=[];particles=[];score=0;lives=3;combo=1;
+ spawn=0;running=true;left=right=false;
+ last=performance.now();
+
+ clouds=Array.from({length:7},()=>({
+  x:Math.random()*W,y:30+Math.random()*360,
+  s:.65+Math.random()*.9,v:.2+Math.random()*.5
+ }));
+ grassFlowers=Array.from({length:36},()=>({
+  x:Math.random()*W,y:H-65+Math.random()*50,
+  color:["#fff","#ffe66d","#ffb5d6"][Math.floor(Math.random()*3)]
+ }));
+
+ document.getElementById("score").textContent=0;
+ document.getElementById("lives").textContent=3;
+ document.getElementById("combo").textContent=1;
+ updateBest();
+ requestAnimationFrame(loop);
+}
+
+function makeObject(){
+ const s=settings[difficulty];
+ const r=Math.random();
+ let type="red";
+
+ if(r<s.bomb)type="bomb";
+ else if(r<s.bomb+s.blue)type="blue";
+ else if(r<s.bomb+s.blue+s.green)type="green";
+
+ const size=type==="red"?13:type==="blue"?19:type==="green"?25:16;
+
+ objects.push({
+  x:28+Math.random()*(W-56),y:-40,
+  r:size,type,
+  vy:s.speed+Math.random()*s.speed*.55+score*.0005,
+  rot:(Math.random()-.5)*.16,
+  value:type==="green"?(Math.random()<.15?300:100):
+        type==="blue"?10:1
+ });
+}
+
+function particle(x,y,n,color){
+ for(let i=0;i<n;i++)particles.push({
+  x,y,vx:(Math.random()-.5)*8,
+  vy:(Math.random()-.5)*8,
+  life:22+Math.random()*25,
+  s:2+Math.random()*5,color
+ });
+}
+
+function cloud(x,y,s){
+ ctx.save();ctx.translate(x,y);ctx.scale(s,s);
+ ctx.fillStyle="#fff";
+ ctx.beginPath();
+ ctx.arc(-24,4,19,0,Math.PI*2);
+ ctx.arc(0,-7,25,0,Math.PI*2);
+ ctx.arc(25,4,19,0,Math.PI*2);
+ ctx.rect(-25,3,51,19);
+ ctx.fill();ctx.restore();
+}
+
+function background(dt){
+ let g=ctx.createLinearGradient(0,0,0,H);
+ g.addColorStop(0,"#63caff");
+ g.addColorStop(.66,"#c5f1ff");
+ g.addColorStop(1,"#e9fbff");
+ ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+
+ ctx.fillStyle="#ffe77a";
+ ctx.beginPath();ctx.arc(465,85,43,0,Math.PI*2);ctx.fill();
+ ctx.fillStyle="#fff5ba";
+ ctx.beginPath();ctx.arc(453,72,14,0,Math.PI*2);ctx.fill();
+
+ clouds.forEach(c=>{
+  c.x+=c.v*dt;
+  if(c.x>W+75)c.x=-75;
+  cloud(c.x,c.y,c.s);
+ });
+
+ ctx.fillStyle="#8edb92";
+ ctx.beginPath();ctx.moveTo(0,H-115);
+ for(let x=0;x<=W;x+=10)
+  ctx.lineTo(x,H-115+Math.sin(x*.018)*24+Math.sin(x*.04)*10);
+ ctx.lineTo(W,H);ctx.lineTo(0,H);ctx.fill();
+
+ ctx.fillStyle="#66c957";
+ ctx.fillRect(0,H-78,W,78);
+ ctx.fillStyle="#46b747";
+ ctx.fillRect(0,H-78,W,12);
+
+ grassFlowers.forEach(f=>{
+  ctx.fillStyle=f.color;
+  ctx.beginPath();ctx.arc(f.x,f.y,3,0,Math.PI*2);ctx.fill();
+ });
+}
+
+function drawPlayer(){
+ ctx.save();
+ ctx.translate(player.x+player.w/2,player.y+player.h/2);
+
+ // Larger woven catching basket
+ ctx.fillStyle="#b66b32";
+ ctx.beginPath();
+ ctx.moveTo(-48,-14);ctx.lineTo(48,-14);
+ ctx.lineTo(39,20);ctx.lineTo(-39,20);
+ ctx.closePath();ctx.fill();
+
+ ctx.strokeStyle="#87471e";ctx.lineWidth=3;ctx.stroke();
+
+ ctx.strokeStyle="#8b552e";ctx.lineWidth=5;
+ ctx.beginPath();ctx.arc(0,-13,35,Math.PI,0);ctx.stroke();
+
+ ctx.strokeStyle="#e7a35a";ctx.lineWidth=3;
+ for(let x=-30;x<=30;x+=15){
+  ctx.beginPath();ctx.moveTo(x,-10);ctx.lineTo(x,17);ctx.stroke();
+ }
+ ctx.restore();
+}
+
+function drawGift(o){
+ ctx.save();ctx.translate(o.x,o.y);ctx.rotate(o.rot);
+
+ if(o.type==="bomb"){
+  ctx.fillStyle="#252c39";
+  ctx.beginPath();ctx.arc(0,0,o.r,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle="#101722";ctx.lineWidth=3;ctx.stroke();
+  ctx.strokeStyle="#ffb33d";ctx.lineWidth=4;
+  ctx.beginPath();ctx.moveTo(5,-o.r+3);
+  ctx.lineTo(12,-o.r-8);ctx.stroke();
+  ctx.fillStyle="#ff4c4c";
+  ctx.beginPath();ctx.arc(16,-o.r-5,4,0,Math.PI*2);ctx.fill();
+ }else{
+  const size=o.r*1.45;
+  const color=o.type==="red"?"#ef4b56":
+              o.type==="blue"?"#318cf4":"#39b95c";
+  const dark=o.type==="red"?"#bd293b":
+             o.type==="blue"?"#1765c1":"#21863c";
+  const ribbon=o.type==="green"?"#ffdf54":"#ffe67b";
+
+  ctx.fillStyle="#0002";
+  ctx.fillRect(-size/2+3,-size/2+5,size,size);
+
+  ctx.fillStyle=color;
+  ctx.fillRect(-size/2,-size/2,size,size);
+  ctx.strokeStyle=dark;ctx.lineWidth=2;
+  ctx.strokeRect(-size/2,-size/2,size,size);
+
+  ctx.fillStyle=ribbon;
+  ctx.fillRect(-size*.12,-size/2,size*.24,size);
+  ctx.fillRect(-size/2,-size*.12,size,size*.24);
+
+  ctx.strokeStyle=ribbon;ctx.lineWidth=4;
+  ctx.beginPath();
+  ctx.ellipse(-5,-size/2-3,6,4,-.5,0,Math.PI*2);
+  ctx.ellipse(5,-size/2-3,6,4,.5,0,Math.PI*2);
+  ctx.stroke();
+
+  if(o.type==="green"&&o.value===300){
+   ctx.fillStyle="#174b24";
+   ctx.font="bold 13px Arial";ctx.textAlign="center";
+   ctx.fillText("300!",0,size/2+14);
+  }
+ }
+ ctx.restore();
+}
+
+function hit(o){
+ return o.x+o.r>player.x-5&&
+ o.x-o.r<player.x+player.w+5&&
+ o.y+o.r>player.y-8&&
+ o.y-o.r<player.y+player.h+12;
+}
+
+function loop(t){
+ if(!running)return;
+ const dt=Math.min((t-last)/16.67,2);
+ last=t;spawn+=dt;
+
+ if(left)player.x-=8*dt;
+ if(right)player.x+=8*dt;
+ player.x=Math.max(5,Math.min(W-player.w-5,player.x));
+
+ background(dt);
+ const s=settings[difficulty];
+ if(spawn>s.interval){makeObject();spawn=0;}
+
+ for(let i=objects.length-1;i>=0;i--){
+  const o=objects[i];
+  o.y+=o.vy*dt;
+  drawGift(o);
+
+  if(hit(o)){
+   if(o.type==="bomb"){
+    lives--;combo=1;
+    particle(o.x,o.y,16,"#ff7048");
+    document.getElementById("lives").textContent=lives;
+    document.getElementById("combo").textContent=1;
+   }else{
+    if(Math.random()>s.glitch)score+=o.value*combo;
+    combo=Math.min(12,combo+(o.type==="green"?2:1));
+    particle(o.x,o.y,14,
+      o.type==="red"?"#ff5252":
+      o.type==="blue"?"#398cff":"#42c96b");
+    document.getElementById("score").textContent=score;
+    document.getElementById("combo").textContent=combo;
+   }
+
+   objects.splice(i,1);
+   if(lives<=0){end();return;}
+   continue;
+  }
+
+  if(o.y>H+45){
+   if(o.type!=="bomb")combo=1;
+   objects.splice(i,1);
+   document.getElementById("combo").textContent=combo;
+  }
+ }
+
+ drawPlayer();
+
+ for(let i=particles.length-1;i>=0;i--){
+  const p=particles[i];
+  p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt;
+  ctx.globalAlpha=Math.max(0,p.life/35);
+  ctx.fillStyle=p.color;
+  ctx.fillRect(p.x,p.y,p.s,p.s);
+  ctx.globalAlpha=1;
+  if(p.life<=0)particles.splice(i,1);
+ }
+
+ requestAnimationFrame(loop);
+}
+
+function end(){
+ running=false;left=right=false;
+ if(score>best){
+  best=score;localStorage.xtroGiftBest=best;
+ }
+ updateBest();
+ document.getElementById("playScreen").style.display="none";
+ document.getElementById("gameover").style.display="block";
+ document.getElementById("final").textContent=score;
+ document.getElementById("finalBest").textContent=best;
+}
+
+function control(btn,side){
+ const down=e=>{
+  e.preventDefault();
+  if(side==="L")left=true;else right=true;
+ };
+ const up=e=>{
+  e.preventDefault();
+  if(side==="L")left=false;else right=false;
+ };
+ btn.addEventListener("pointerdown",down);
+ btn.addEventListener("pointerup",up);
+ btn.addEventListener("pointercancel",up);
+ btn.addEventListener("pointerleave",up);
+}
+control(document.getElementById("L"),"L");
+control(document.getElementById("R"),"R");
+
+document.addEventListener("keydown",e=>{
+ if(e.key==="ArrowLeft"||e.key==="a")left=true;
+ if(e.key==="ArrowRight"||e.key==="d")right=true;
+});
+document.addEventListener("keyup",e=>{
+ if(e.key==="ArrowLeft"||e.key==="a")left=false;
+ if(e.key==="ArrowRight"||e.key==="d")right=false;
+});
+window.addEventListener("blur",()=>{left=false;right=false;});
+
+home();
+</script>
+</body>
+</html>
+
